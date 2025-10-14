@@ -1,5 +1,6 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_socketio import SocketIO, emit
+from flask_cors import CORS  # Add this import
 import cv2
 import numpy as np
 import onnxruntime as ort
@@ -32,6 +33,9 @@ if not SECRET_KEY:
         logger.warning("Using temporary SECRET_KEY for development")
 
 app.config['SECRET_KEY'] = SECRET_KEY
+
+# Add CORS support for all routes
+CORS(app, origins="*", methods=["GET", "POST", "OPTIONS"])
 
 # Remove async_mode to fix compatibility issues
 socketio = SocketIO(app, 
@@ -232,59 +236,118 @@ def handle_health_check():
         'model_source': 'Hugging Face' if MODEL_LOADED else 'None'
     })
 
+# Add this to handle preflight requests
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify({"status": "success"})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+        response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS")
+        return response
+
 @app.route('/')
 def index():
-    return {
+    response = jsonify({
         'status': 'Pothole Detection API', 
         'model_loaded': MODEL_LOADED,
         'model_source': 'Hugging Face' if MODEL_LOADED else 'None',
         'repository': 'subhodeepmoitra/pothole-detection-yolov8'
-    }
+    })
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response
 
 @app.route('/health')
 def health():
-    return {
+    response = jsonify({
         'status': 'healthy', 
         'model_loaded': MODEL_LOADED,
         'timestamp': time.time()
-    }
+    })
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response
 
 # New endpoint to get model info
 @app.route('/model-info')
 def model_info():
     if MODEL_LOADED and detector:
-        return {
+        response = jsonify({
             'model_loaded': True,
             'model_path': detector.model_path,
             'input_size': detector.input_size,
             'confidence_threshold': detector.conf_threshold,
             'repository': 'subhodeepmoitra/pothole-detection-yolov8'
-        }
+        })
     else:
-        return {
+        response = jsonify({
             'model_loaded': False,
             'error': 'Model not available'
-        }
+        })
+    
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response
 
-@app.route('/process-frame', methods=['POST'])
+@app.route('/process-frame', methods=['POST', 'OPTIONS'])
 def process_frame_http():
     """HTTP endpoint for frame processing"""
+    if request.method == "OPTIONS":
+        response = jsonify({"status": "success"})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+        return response
+        
     if not MODEL_LOADED or detector is None:
-        return {'success': False, 'error': 'Model not loaded'}
+        response = jsonify({'success': False, 'error': 'Model not loaded'})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        return response
     
     try:
         data = request.get_json()
+        if not data or 'image' not in data:
+            response = jsonify({'success': False, 'error': 'No image data received'})
+            response.headers.add("Access-Control-Allow-Origin", "*")
+            return response
+            
         start_time = time.time()
         
         result = detector.process_frame(data['image'])
         result['processing_time'] = time.time() - start_time
         result['frame_id'] = data.get('frame_id', 0)
         
-        return result
+        response = jsonify(result)
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        return response
         
     except Exception as e:
         logger.error(f"HTTP frame processing error: {e}")
-        return {'success': False, 'error': str(e)}
+        response = jsonify({'success': False, 'error': str(e)})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        return response
+
+# Add debug endpoint
+@app.route('/debug')
+def debug_info():
+    """Detailed debugging information"""
+    import sys
+    info = {
+        'model_loaded': MODEL_LOADED,
+        'model_source': 'Hugging Face' if MODEL_LOADED else 'None',
+        'python_version': sys.version,
+        'onnxruntime_version': ort.__version__,
+        'opencv_version': cv2.__version__,
+        'timestamp': time.time()
+    }
+    
+    if MODEL_LOADED and detector:
+        info.update({
+            'model_path': detector.model_path,
+            'input_size': detector.input_size,
+            'confidence_threshold': detector.conf_threshold
+        })
+    
+    response = jsonify(info)
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response
 
 if __name__ == '__main__':
     logger.info("Starting Pothole Detection Server...")
