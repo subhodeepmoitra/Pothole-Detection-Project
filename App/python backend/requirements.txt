@@ -1,10 +1,10 @@
 flask==2.3.3
 flask-socketio==5.3.6
 eventlet==0.33.3
-onnxruntime>=1.17.0
-opencv-python==4.9.0.80
-numpy==1.26.4
-pillow==10.2.0
-huggingface-hub==0.22.2
-python-dotenv==1.0.0
-gunicorn==21.2.0
+onnxruntime
+opencv-python
+numpy
+pillow
+huggingface-hub
+python-dotenv
+gunicorn
