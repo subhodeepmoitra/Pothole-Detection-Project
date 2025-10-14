@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: pothole-detection-backend
+    env: python
+    plan: free
+    runtime: python
+    pythonVersion: "3.11.9"
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --worker-class eventlet -w 1 wsgi:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_ENV
+        value: production
