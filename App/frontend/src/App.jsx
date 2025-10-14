@@ -17,7 +17,7 @@ const PotholeDetector = () => {
   // Socket connection
   useEffect(() => {
     // Connect to WebSocket server (Render backend URL)
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://pothole-detection-project.onrender.com';
     socketRef.current = io(backendUrl);
 
     socketRef.current.on('connect', () => {
