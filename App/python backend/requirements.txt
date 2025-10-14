@@ -7,7 +7,7 @@ python-dotenv==1.0.0
 eventlet==0.33.3
 
 # Machine Learning & Computer Vision
-onnxruntime==1.16.0
+onnxruntime==1.17.0
 opencv-python==4.8.1.78
 numpy==1.24.3
 pillow==10.0.1
