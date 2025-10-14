@@ -266,6 +266,26 @@ def model_info():
             'error': 'Model not available'
         }
 
+@app.route('/process-frame', methods=['POST'])
+def process_frame_http():
+    """HTTP endpoint for frame processing"""
+    if not MODEL_LOADED or detector is None:
+        return {'success': False, 'error': 'Model not loaded'}
+    
+    try:
+        data = request.get_json()
+        start_time = time.time()
+        
+        result = detector.process_frame(data['image'])
+        result['processing_time'] = time.time() - start_time
+        result['frame_id'] = data.get('frame_id', 0)
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"HTTP frame processing error: {e}")
+        return {'success': False, 'error': str(e)}
+
 if __name__ == '__main__':
     logger.info("Starting Pothole Detection Server...")
     logger.info(f"Model repository: subhodeepmoitra/pothole-detection-yolov8")
