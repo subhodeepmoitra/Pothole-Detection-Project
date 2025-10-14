@@ -1,20 +1,10 @@
-# Flask and Web Framework
 flask==2.3.3
 flask-socketio==5.3.6
-python-dotenv==1.0.0
-
-# Async Server (Required for WebSockets)
 eventlet==0.33.3
-
-# Machine Learning & Computer Vision - USE LATEST AVAILABLE
-onnxruntime==1.17.1
+onnxruntime>=1.17.0
 opencv-python==4.9.0.80
 numpy==1.26.4
 pillow==10.2.0
-
-# Hugging Face Integration
 huggingface-hub==0.22.2
-requests==2.31.0
-
-# Production WSGI Server
+python-dotenv==1.0.0
 gunicorn==21.2.0
