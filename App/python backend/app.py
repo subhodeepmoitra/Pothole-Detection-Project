@@ -275,11 +275,3 @@ if __name__ == '__main__':
                    logger=True,
                    engineio_logger=True)
     
-    # Use this for development with eventlet
-   ''' socketio.run(
-        app, 
-        host='0.0.0.0', 
-        port=5000, 
-        debug=True
-    ) '''
-    
