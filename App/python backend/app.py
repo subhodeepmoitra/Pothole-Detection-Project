@@ -270,11 +270,16 @@ def model_info():
 if __name__ == '__main__':
     logger.info("Starting Pothole Detection Server...")
     logger.info(f"Model repository: subhodeepmoitra/pothole-detection-yolov8")
+    socketio = SocketIO(app, 
+                   cors_allowed_origins="*",
+                   logger=True,
+                   engineio_logger=True)
     
     # Use this for development with eventlet
-    socketio.run(
+   ''' socketio.run(
         app, 
         host='0.0.0.0', 
         port=5000, 
         debug=True
-    )
+    ) '''
+    
