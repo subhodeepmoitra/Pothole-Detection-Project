@@ -1,0 +1,13 @@
+{
+        "model_type": "yolov8-segmentation",
+        "task": "object-detection",
+        "framework": "onnx",
+        "input_size": [640, 640],
+        "classes": ["pothole"],
+        "performance": {
+            "map50": float(metrics.box.map50),
+            "precision": float(metrics.box.p[0]),
+            "recall": float(metrics.box.r[0])
+        }
+
+    }
