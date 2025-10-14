@@ -33,10 +33,9 @@ if not SECRET_KEY:
 
 app.config['SECRET_KEY'] = SECRET_KEY
 
-# Fix for eventlet - use correct async mode
+# Remove async_mode to fix compatibility issues
 socketio = SocketIO(app, 
-                   cors_allowed_origins="*", 
-                   async_mode='eventlet',
+                   cors_allowed_origins="*",
                    logger=True,
                    engineio_logger=True)
 
@@ -182,7 +181,7 @@ except Exception as e:
     MODEL_LOADED = False
     detector = None
 
-# FIXED: SocketIO handlers now accept the proper arguments
+# SocketIO handlers
 @socketio.on('connect')
 def handle_connect():
     client_id = request.sid
@@ -270,8 +269,11 @@ def model_info():
 if __name__ == '__main__':
     logger.info("Starting Pothole Detection Server...")
     logger.info(f"Model repository: subhodeepmoitra/pothole-detection-yolov8")
-    socketio = SocketIO(app, 
-                   cors_allowed_origins="*",
-                   logger=True,
-                   engineio_logger=True)
     
+    # Use this for development
+    socketio.run(
+        app, 
+        host='0.0.0.0', 
+        port=5000, 
+        debug=True
+    )
