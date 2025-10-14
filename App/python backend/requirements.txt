@@ -6,15 +6,15 @@ python-dotenv==1.0.0
 # Async Server (Required for WebSockets)
 eventlet==0.33.3
 
-# Machine Learning & Computer Vision
-onnxruntime==1.17.0
-opencv-python==4.8.1.78
-numpy==1.24.3
-pillow==10.0.1
+# Machine Learning & Computer Vision - USE LATEST AVAILABLE
+onnxruntime==1.17.1
+opencv-python==4.9.0.80
+numpy==1.26.4
+pillow==10.2.0
 
 # Hugging Face Integration
-huggingface-hub==0.17.3
+huggingface-hub==0.22.2
 requests==2.31.0
 
-# Production WSGI Server (Optional for Render)
+# Production WSGI Server
 gunicorn==21.2.0
