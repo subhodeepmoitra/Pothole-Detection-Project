@@ -19,7 +19,36 @@ logger = logging.getLogger(__name__)
 
 # WebRTC configuration for real-time streaming
 RTC_CONFIGURATION = RTCConfiguration(
-    {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+    # Enhanced WebRTC configuration with multiple STUN servers
+RTC_CONFIGURATION = RTCConfiguration({
+    "iceServers": [
+        # Primary Google STUN servers (most reliable)
+        {"urls": ["stun:stun.l.google.com:19302"]},
+        {"urls": ["stun:stun1.l.google.com:19302"]},
+        {"urls": ["stun:stun2.l.google.com:19302"]},
+        {"urls": ["stun:stun3.l.google.com:19302"]},
+        {"urls": ["stun:stun4.l.google.com:19302"]},
+        
+        # Backup STUN servers
+        {"urls": ["stun:stun.voipbuster.com:3478"]},
+        {"urls": ["stun:stun.voipstunt.com:3478"]},
+        {"urls": ["stun:stun.voiparound.com:3478"]},
+        
+        # Twilio STUN (enterprise-grade reliability)
+        {"urls": ["stun:global.stun.twilio.com:3478"]},
+        
+        # Additional public STUN servers
+        {"urls": ["stun:stun.services.mozilla.com:3478"]},
+        {"urls": ["stun:stun.nextcloud.com:3478"]},
+        
+        # to add TURN servers later (requires credentials):
+        # {
+        #     "urls": ["turn:your-turn-server.com:3478"],
+        #     "username": "your-username",
+        #     "credential": "your-password"
+        # }
+    ]
+})
 )
 
 class PotholeDetector:
