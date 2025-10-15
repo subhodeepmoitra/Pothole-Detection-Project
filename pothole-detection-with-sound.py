@@ -14,6 +14,7 @@ import tempfile
 import os
 import io
 import base64
+import asyncio
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -53,16 +54,6 @@ class AudioAlert:
         </script>
         """
         return beep_js
-    
-    @staticmethod
-    def play_alert_sound():
-        """Play alert sound using HTML5 audio"""
-        audio_html = """
-        <audio autoplay>
-            <source src="https://assets.mixkit.co/active_storage/sfx/250/250-preview.mp3" type="audio/mpeg">
-        </audio>
-        """
-        return audio_html
 
 class PotholeDetector:
     def __init__(self, repo_id="subhodeepmoitra/pothole-detection-yolov8", filename="best.onnx"):
@@ -242,6 +233,10 @@ class VideoProcessor:
             logger.error(f"Error in video processing: {e}")
             return frame
 
+    def on_ended(self):
+        """Called when the video stream ends"""
+        logger.info("Video stream ended")
+
 # Streamlit App
 def main():
     st.set_page_config(
@@ -270,6 +265,7 @@ def main():
                 st.session_state.audio_trigger = 0
                 st.session_state.last_audio_trigger = 0
                 st.session_state.camera_mode = "environment"  # Default to back camera
+                st.session_state.webrtc_ctx = None
                 st.success("AI model loaded successfully!")
             except Exception as e:
                 st.session_state.model_loaded = False
@@ -379,15 +375,24 @@ def show_realtime_detection(enable_audio, beep_frequency, beep_duration):
     # Initialize video processor
     video_processor = VideoProcessor(st.session_state.detector)
     
-    # Real-time WebRTC streamer with camera selection
-    webrtc_ctx = webrtc_streamer(
-        key=f"pothole-detection-{st.session_state.camera_mode}",  # Unique key for each camera mode
-        mode=WebRtcMode.SENDRECV,
-        rtc_configuration=RTC_CONFIGURATION,
-        video_processor_factory=lambda: video_processor,
-        media_stream_constraints=media_stream_constraints,
-        async_processing=True,
-    )
+    try:
+        # Real-time WebRTC streamer with camera selection
+        webrtc_ctx = webrtc_streamer(
+            key=f"pothole-detection-{st.session_state.camera_mode}",  # Unique key for each camera mode
+            mode=WebRtcMode.SENDRECV,
+            rtc_configuration=RTC_CONFIGURATION,
+            video_processor_factory=lambda: video_processor,
+            media_stream_constraints=media_stream_constraints,
+            async_processing=True,
+        )
+        
+        # Store WebRTC context in session state
+        st.session_state.webrtc_ctx = webrtc_ctx
+        
+    except Exception as e:
+        st.error(f"Error initializing camera: {e}")
+        st.info("Please refresh the page and try again.")
+        return
     
     # Camera switching instructions
     if st.session_state.camera_mode == "environment":
@@ -396,7 +401,7 @@ def show_realtime_detection(enable_audio, beep_frequency, beep_duration):
         st.warning("💡 **Tip:** Switch to back camera in settings for better road scanning")
     
     # Real-time statistics
-    if webrtc_ctx.state.playing:
+    if webrtc_ctx and webrtc_ctx.state.playing:
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
@@ -432,6 +437,9 @@ def show_realtime_detection(enable_audio, beep_frequency, beep_duration):
         - Keep camera steady for accurate detection
         - Back camera recommended for actual road scanning
         """)
+    
+    elif webrtc_ctx and webrtc_ctx.state.playing is False:
+        st.info("🛑 Camera stream stopped. Click 'START' to restart.")
 
 def show_single_image_detection(enable_audio, beep_frequency, beep_duration):
     st.header("📷 Single Image Detection")
@@ -541,6 +549,8 @@ def process_video_file(video_path, enable_audio, beep_frequency, beep_duration):
     last_beep_time = 0
     beep_cooldown = 2.0  # seconds between beeps
     
+    progress_bar = st.progress(0)
+    
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -586,8 +596,13 @@ def process_video_file(video_path, enable_audio, beep_frequency, beep_duration):
                         st.metric("Audio", audio_status)
         
         frame_count += 1
+        # Update progress
+        if total_frames > 0:
+            progress = min(frame_count / total_frames, 1.0)
+            progress_bar.progress(progress)
     
     cap.release()
+    progress_bar.empty()
     st.success(f"Video processing complete! Processed {frame_count} frames, found {pothole_count} potholes.")
 
 if __name__ == "__main__":
