@@ -199,6 +199,7 @@ def main():
     # App title
     st.title("Real-time Pothole Detection")
     st.markdown("AI-powered real-time pothole detection using YOLOv8 and live video streaming")
+    st.markdown("Developed by Subhodeep Moitra, Dept. of Computer Appkications, Techno College Hooghly")
     
     # Initialize session state
     if 'detector' not in st.session_state:
