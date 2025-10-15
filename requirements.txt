@@ -1,0 +1,9 @@
+streamlit
+streamlit-webrtc
+opencv-python-headless
+onnxruntime
+Pillow
+huggingface-hub
+numpy
+av
+aiortc
