@@ -13,6 +13,94 @@ import os
 import io
 import base64
 
+import serial
+import serial.tools.list_ports
+import threading
+
+class ArduinoController:
+    """Controls Arduino Uno over USB serial."""
+
+    def __init__(self, port="/dev/ttyACM0", baudrate=115200):
+        self.port = port
+        self.baudrate = baudrate
+        self.serial = None
+        self.lock = threading.Lock()
+        self.last_state = None
+
+    def connect(self):
+        """Connect to Arduino."""
+        try:
+            self.serial = serial.Serial(
+                self.port,
+                self.baudrate,
+                timeout=1
+            )
+
+            # Give Arduino time to reset after serial connection
+            time.sleep(2)
+
+            logger.info(f"Arduino connected on {self.port}")
+            self.send("CLEAR")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Arduino connection failed: {e}")
+            self.serial = None
+            return False
+
+    def disconnect(self):
+        """Disconnect Arduino."""
+        with self.lock:
+            if self.serial and self.serial.is_open:
+                try:
+                    self.send("CLEAR")
+                    self.serial.close()
+                except Exception:
+                    pass
+
+            self.serial = None
+
+    def send(self, command):
+        """Send command to Arduino."""
+        with self.lock:
+            if self.serial is None or not self.serial.is_open:
+                return False
+
+            try:
+                self.serial.write((command + "\n").encode("utf-8"))
+                self.serial.flush()
+
+                logger.info(f"Arduino command: {command}")
+
+                return True
+
+            except Exception as e:
+                logger.error(f"Arduino communication error: {e}")
+                return False
+
+    def set_pothole(self, detected):
+        """Turn LED on/off based on pothole detection."""
+
+        state = "POTHOLE" if detected else "CLEAR"
+
+        # Don't repeatedly send the same command
+        if state == self.last_state:
+            return True
+
+        success = self.send(state)
+
+        if success:
+            self.last_state = state
+
+        return success
+
+    def is_connected(self):
+        return (
+            self.serial is not None
+            and self.serial.is_open
+        )
+
 # Configure logging
 logging.getLogger('aioice').setLevel(logging.ERROR)
 logging.getLogger('aiortc').setLevel(logging.ERROR)
@@ -325,6 +413,37 @@ def main():
     )
     
     st.session_state.detector.conf_threshold = confidence_threshold
+
+    st.sidebar.subheader("🔌 Arduino")
+
+    arduino_port = st.sidebar.text_input(
+        "Arduino Serial Port",
+        value="/dev/ttyACM0"
+    )
+
+    if "arduino" not in st.session_state:
+        st.session_state.arduino = ArduinoController(
+            port=arduino_port,
+            baudrate=115200
+        )
+
+    if st.sidebar.button("Connect Arduino"):
+
+        # Recreate controller if port changed
+        st.session_state.arduino = ArduinoController(
+            port=arduino_port,
+            baudrate=115200
+        )
+
+        if st.session_state.arduino.connect():
+            st.sidebar.success("🟢 Arduino connected")
+        else:
+            st.sidebar.error("🔴 Arduino connection failed")
+
+    if st.session_state.arduino.is_connected():
+        st.sidebar.success("🟢 Arduino: CONNECTED")
+    else:
+        st.sidebar.warning("⚪ Arduino: DISCONNECTED")
     
     # Processing mode selection
     processing_mode = st.sidebar.radio(
